@@ -35,4 +35,5 @@ describe 'retry' do
       raise FooError if rand(10) != 0
     end
   end
+  
 end

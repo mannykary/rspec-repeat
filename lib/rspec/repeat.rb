@@ -17,6 +17,7 @@ module RSpec
     # - `verbose` - print messages if true
     # - `exceptions` - if given, only retry exceptions from this list
     # - `clear_let` - when false, don't clear `let`'s
+    # - `incremental_wait` - increase wait time by 1s with each retry
     #
     def repeat(ex, count, options = {})
       Repeater.new(count, options).run(ex, self)
@@ -25,7 +26,7 @@ module RSpec
     # Much of this code is borrowed from:
     # https://github.com/NoRedInk/rspec-retry/blob/master/lib/rspec/retry.rb
     class Repeater
-      attr_accessor :count, :wait, :exceptions, :verbose, :clear_let
+      attr_accessor :count, :wait, :exceptions, :verbose, :clear_let, :incremental_wait
 
       def initialize(count, options = {})
         options.each do |key, val|
@@ -36,6 +37,7 @@ module RSpec
         self.count = count.times if count.is_a?(Numeric)
         self.verbose = ENV['RSPEC_RETRY_VERBOSE'] if verbose.nil?
         self.clear_let = true if clear_let.nil?
+        self.incremental_wait = false if incremental_wait.nil?
       end
 
       def run(ex, ctx)
@@ -48,7 +50,10 @@ module RSpec
           break if !matches_exceptions?(exceptions, example.exception)
           print_failure(i, example) if verbose
           clear_memoize(ctx) if clear_let
-          sleep wait if wait.to_i > 0
+          if wait.to_i > 0
+            self.wait += 1 if incremental_wait
+            sleep wait
+          end
         end
       end
 
